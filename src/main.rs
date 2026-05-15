@@ -1,7 +1,8 @@
-// ============================================================================
-// FASE 1 — ANÁLISIS DE SEGURIDAD Y PROPIEDAD
-// ============================================================================
-
+/* 
+============================================================================
+   FASE 1 — ANÁLISIS DE SEGURIDAD Y PROPIEDAD
+============================================================================
+*/
 #[derive(Debug, Clone)]
 struct Vuelo {
     id: String,
@@ -303,7 +304,7 @@ ROTACIONES REALIZADAS
 
 /*
 ============================================================================
-FASE 2 — LOCALIZACIÓN DE VUELOS
+    FASE 2 — LOCALIZACIÓN DE VUELOS
 ============================================================================
 Busca un vuelo por su altitud dentro del árbol AVL.
 
@@ -341,7 +342,7 @@ fn buscar_vuelo(
 
 /*
 ============================================================================
-FASE 3 — DESCENSO Y ATERRIZAJE (ELIMINACIÓN AVL)
+    FASE 3 — DESCENSO Y ATERRIZAJE (ELIMINACIÓN AVL)
 ============================================================================
 
 Encuentra el vuelo con mayor altitud dentro de un subárbol izquierdo.
@@ -511,5 +512,66 @@ fn eliminar_vuelo(
 
     Some(nodo)
 }
+
+/*
+
+============================================================================
+    FASE 4 — ALERTA DE PROXIMIDAD
+============================================================================
+
+Cuenta cuántos vuelos se encuentran dentro de un rango de altitud.
+
+Parámetros:
+- nodo: referencia al nodo actual
+- min: altitud mínima
+- max: altitud máxima
+
+Retorna:
+- Cantidad de vuelos dentro del rango indicado.
+
+Optimización:
+- Aprovecha la propiedad del árbol AVL.
+- Evita recorrer ramas innecesarias.
+- Complejidad aproximada O(log n) en casos balanceados.
+*/
+
+fn vuelos_en_rango(
+    nodo: &Option<Box<Nodo>>,
+    min: u32,
+    max: u32
+) -> usize {
+
+    match nodo {
+
+        None => 0,
+
+        Some(n) => {
+
+            // Si la altitud actual es menor al mínimo,
+            // solo buscamos en el subárbol derecho
+
+            if n.vuelo.altitud < min {
+
+                vuelos_en_rango(&n.derecho, min, max)
+
+            // Si la altitud actual es mayor al máximo,
+            // solo buscamos en el subárbol izquierdo
+
+            } else if n.vuelo.altitud > max {
+
+                vuelos_en_rango(&n.izquierdo, min, max)
+
+            } else {
+
+                // El vuelo actual está dentro del rango
+
+                1
+                + vuelos_en_rango(&n.izquierdo, min, max)
+                + vuelos_en_rango(&n.derecho, min, max)
+            }
+        }
+    }
+}
+
 
 
