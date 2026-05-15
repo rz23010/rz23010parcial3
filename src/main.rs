@@ -339,4 +339,177 @@ fn buscar_vuelo(
     }
 }
 
+/*
+============================================================================
+FASE 3 — DESCENSO Y ATERRIZAJE (ELIMINACIÓN AVL)
+============================================================================
+
+Encuentra el vuelo con mayor altitud dentro de un subárbol izquierdo.
+
+Se utiliza como:
+PREDECESOR IN-ORDER
+
+El predecesor es:
+- El valor más grande del subárbol izquierdo.
+- Se usa para reemplazar un nodo con dos hijos.
+*/
+
+fn encontrar_maximo(nodo: &Box<Nodo>) -> &Vuelo {
+
+    match &nodo.derecho {
+
+        None => &nodo.vuelo,
+
+        Some(der) => encontrar_maximo(der),
+    }
+}
+
+/*
+Elimina un vuelo del árbol AVL usando su altitud.
+
+Casos manejados:
+
+1. Nodo hoja
+   → Se elimina directamente.
+
+2. Nodo con un hijo
+   → El nodo es reemplazado por su hijo.
+
+3. Nodo con dos hijos
+   → Se reemplaza usando el predecesor in-order
+     (máximo del subárbol izquierdo).
+
+Después de eliminar:
+- Se recalculan alturas.
+- Se aplican rotaciones AVL si es necesario.
+*/
+
+fn eliminar_vuelo(
+    nodo_opt: Option<Box<Nodo>>,
+    altitud: u32
+) -> Option<Box<Nodo>> {
+
+    let mut nodo = match nodo_opt {
+
+        None => return None,
+
+        Some(n) => n,
+    };
+
+    // ================================
+    // BÚSQUEDA RECURSIVA
+    // ================================
+
+    if altitud < nodo.vuelo.altitud {
+
+        nodo.izquierdo =
+            eliminar_vuelo(nodo.izquierdo.take(), altitud);
+
+    } else if altitud > nodo.vuelo.altitud {
+
+        nodo.derecho =
+            eliminar_vuelo(nodo.derecho.take(), altitud);
+
+    } else {
+
+        // ==============================
+        // NODO ENCONTRADO
+        // ==============================
+
+        // Caso 1:
+        // Nodo sin hijo izquierdo
+
+        if nodo.izquierdo.is_none() {
+
+            return nodo.derecho;
+        }
+
+        // Caso 2:
+        // Nodo sin hijo derecho
+
+        if nodo.derecho.is_none() {
+
+            return nodo.izquierdo;
+        }
+
+        // Caso 3:
+        // Nodo con dos hijos
+
+        if let Some(ref izquierdo) = nodo.izquierdo {
+
+            // Obtener predecesor in-order
+            
+            let predecesor = encontrar_maximo(izquierdo).clone();
+
+            // Reemplazar datos del nodo
+
+            nodo.vuelo = predecesor;
+
+            // Eliminar el predecesor original
+
+            nodo.izquierdo =
+                eliminar_vuelo(
+                    nodo.izquierdo.take(),
+                    nodo.vuelo.altitud
+                );
+        }
+    }
+
+    // ========================================================================
+    //   ACTUALIZAR ALTURA
+    // ========================================================================
+
+    actualizar_altura(&mut nodo);
+
+    let balance = obtener_balance(&nodo);
+
+    // ========================================================================
+    //   RE-BALANCEO AVL
+    // ========================================================================
+
+    // Caso Izquierda-Izquierda (LL)
+
+    if balance > 1 &&
+        obtener_balance(nodo.izquierdo.as_ref().unwrap()) >= 0 {
+
+        return Some(rotar_derecha(nodo));
+    }
+
+    // Caso Izquierda-Derecha (LR)
+
+    if balance > 1 &&
+        obtener_balance(nodo.izquierdo.as_ref().unwrap()) < 0 {
+
+        let hijo_izq = nodo.izquierdo.take().unwrap();
+
+        nodo.izquierdo =
+            Some(rotar_izquierda(hijo_izq));
+
+        return Some(rotar_derecha(nodo));
+    }
+
+    // Caso Derecha-Derecha (RR)
+
+    if balance < -1 &&
+        obtener_balance(nodo.derecho.as_ref().unwrap()) <= 0 {
+
+        return Some(rotar_izquierda(nodo));
+    }
+
+    // Caso Derecha-Izquierda (RL)
+
+    if balance < -1 &&
+        obtener_balance(nodo.derecho.as_ref().unwrap()) > 0 {
+
+        let hijo_der = nodo.derecho.take().unwrap();
+
+        nodo.derecho =
+            Some(rotar_derecha(hijo_der));
+
+        return Some(rotar_izquierda(nodo));
+    }
+
+    Some(nodo)
+}
+
 
