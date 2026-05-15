@@ -171,6 +171,68 @@ fn rotar_izquierda(mut x: Box<Nodo>) -> Box<Nodo> {
     y
 }
 
+/*
+============================================================================
+FUNCIONES DE INSERCIÓN AVL
+============================================================================
+Inserta un nuevo vuelo en el árbol y lo balancea automáticamente.
+*/
+
+fn insertar(nodo_opt: Option<Box<Nodo>>, vuelo: Vuelo) -> Box<Nodo> {
+    // 1. Guardamos la altitud en una variable local antes de mover 'vuelo'
+    let altitud_nueva = vuelo.altitud;
+
+    let mut nodo = match nodo_opt {
+        None => return Box::new(Nodo::nuevo(vuelo)),
+        Some(n) => n,
+    };
+
+    // 2. Aquí usamos altitud_nueva para comparar
+    if altitud_nueva < nodo.vuelo.altitud {
+        nodo.izquierdo = Some(insertar(nodo.izquierdo.take(), vuelo));
+    } else if altitud_nueva > nodo.vuelo.altitud {
+        nodo.derecho = Some(insertar(nodo.derecho.take(), vuelo));
+    } else {
+        return nodo; // Altitud duplicada
+    }
+
+    // Actualizar altura
+    actualizar_altura(&mut nodo);
+
+    // Obtener balance
+    let balance = obtener_balance(&nodo);
+
+    // 3. En las rotaciones, usamos altitud_nueva en lugar de vuelo.altitud
+    
+    // Caso Izquierda-Izquierda (LL)
+    if balance > 1 && altitud_nueva < nodo.izquierdo.as_ref().unwrap().vuelo.altitud {
+        return rotar_derecha(nodo);
+    }
+
+    // Caso Derecha-Derecha (RR)
+    if balance < -1 && altitud_nueva > nodo.derecho.as_ref().unwrap().vuelo.altitud {
+        return rotar_izquierda(nodo);
+    }
+
+    // Caso Izquierda-Derecha (LR)
+    if balance > 1 && altitud_nueva > nodo.izquierdo.as_ref().unwrap().vuelo.altitud {
+        let hijo_izq = nodo.izquierdo.take().unwrap();
+        nodo.izquierdo = Some(rotar_izquierda(hijo_izq));
+        return rotar_derecha(nodo);
+    }
+
+    // Caso Derecha-Izquierda (RL)
+    if balance < -1 && altitud_nueva < nodo.derecho.as_ref().unwrap().vuelo.altitud {
+        let hijo_der = nodo.derecho.take().unwrap();
+        nodo.derecho = Some(rotar_derecha(hijo_der));
+        return rotar_izquierda(nodo);
+    }
+
+    nodo
+}
+
+
+
 // ================================================
 // PRUEBA DE ESCRITORIO AVL
 // ================================================
@@ -574,4 +636,118 @@ fn vuelos_en_rango(
 }
 
 
+fn main() {
 
+    let mut radar: Option<Box<Nodo>> = None;
+/*
+    ========================================================================
+    INSERCIÓN DE VUELOS
+    ========================================================================
+*/
+    let datos = vec![
+        ("AV123", 5000),
+        ("UA456", 3000),
+        ("IB101", 2000),
+        ("AF999", 4000),
+        ("TA222", 3500),
+        ("AM777", 6000),
+    ];
+
+    println!("=== MOTOR DE TRÁFICO AÉREO (AVL) ===\n");
+
+    println!("Insertando vuelos...\n");
+
+    for (id, alt) in datos {
+
+        let vuelo = Vuelo {
+            id: id.to_string(),
+            altitud: alt,
+        };
+
+        radar = Some(insertar(radar.take(), vuelo));
+    }
+/* 
+    ========================================================================
+    FASE 2 — BÚSQUEDA
+    ========================================================================
+*/
+    println!("=== FASE 2: BÚSQUEDA DE VUELOS ===\n");
+
+    // Vuelo existente
+    match buscar_vuelo(&radar, 4000) {
+
+        Some(vuelo) => {
+            println!(
+                "Vuelo encontrado -> ID: {}, Altitud: {}",
+                vuelo.id,
+                vuelo.altitud
+            );
+        }
+
+        None => {
+            println!("No se encontró el vuelo.");
+        }
+    }
+
+    // Vuelo inexistente
+    match buscar_vuelo(&radar, 9000) {
+
+        Some(vuelo) => {
+            println!(
+                "Vuelo encontrado -> ID: {}, Altitud: {}",
+                vuelo.id,
+                vuelo.altitud
+            );
+        }
+
+        None => {
+            println!("No existe un vuelo con altitud 9000.");
+        }
+    }
+
+/*
+    ========================================================================
+    FASE 3 — ELIMINACIÓN
+    ========================================================================
+*/
+    println!("\n=== FASE 3: ELIMINACIÓN DE VUELOS ===\n");
+
+    // Eliminar nodo hoja
+    println!("Eliminando vuelo con altitud 2000...");
+    radar = eliminar_vuelo(radar.take(), 2000);
+
+    // Verificación
+    match buscar_vuelo(&radar, 2000) {
+
+        Some(_) => println!("Error: el vuelo aún existe."),
+
+        None => println!("Vuelo eliminado correctamente."),
+    }
+
+    // Eliminar nodo con dos hijos
+    println!("\nEliminando vuelo con altitud 4000...");
+    radar = eliminar_vuelo(radar.take(), 4000);
+
+    // Verificación
+    match buscar_vuelo(&radar, 4000) {
+
+        Some(_) => println!("Error: el vuelo aún existe."),
+
+        None => println!("Vuelo eliminado correctamente."),
+    }
+/* 
+    ========================================================================
+    FASE 4 — ALERTA DE PROXIMIDAD
+    ========================================================================
+*/
+    println!("\n=== FASE 4: ALERTA DE PROXIMIDAD ===\n");
+
+    let cantidad = vuelos_en_rango(&radar, 3000, 6000);
+
+    println!(
+        "Cantidad de vuelos entre 3000 y 6000 pies: {}",
+        cantidad
+    );
+
+    println!("\n=== SIMULACIÓN FINALIZADA ===");
+}
