@@ -301,3 +301,42 @@ ROTACIONES REALIZADAS
 
 */
 
+/*
+============================================================================
+FASE 2 — LOCALIZACIÓN DE VUELOS
+============================================================================
+Busca un vuelo por su altitud dentro del árbol AVL.
+
+Parámetros:
+- nodo: referencia al nodo actual
+- altitud: altitud del vuelo a buscar
+
+Retorna:
+- Some(&Vuelo): referencia al vuelo encontrado
+- None: si el vuelo no existe
+
+Características:
+- Usa solo referencias (&), por lo que NO modifica el árbol.
+- No realiza copias innecesarias.
+- Complejidad O(log n) en un AVL balanceado.
+*/
+
+fn buscar_vuelo(
+    nodo: &Option<Box<Nodo>>,
+    altitud: u32
+) -> Option<&Vuelo> {
+    match nodo {
+        None => None,
+        Some(n) => {
+            if altitud == n.vuelo.altitud {
+                Some(&n.vuelo)
+            } else if altitud < n.vuelo.altitud {
+                buscar_vuelo(&n.izquierdo, altitud)
+            } else {
+                buscar_vuelo(&n.derecho, altitud)
+            }
+        }
+    }
+}
+
+
