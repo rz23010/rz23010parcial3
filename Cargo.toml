@@ -1,0 +1,6 @@
+[package]
+name = "Parcial3RZ23010"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
